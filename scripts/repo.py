@@ -267,6 +267,15 @@ def load_repo_steps(sk: dict[str, Any], steps: list[Item]) -> Path:
 
 def validate_workflow(item: Item, sk: dict[str, Any]) -> list[str]:
     errors = _common_checks(item)
+    # Catalog installs fetch workflow.yml by raw URL; sibling files never arrive.
+    allowed = {"workflow.yml"} | STEP_DOC_FILES
+    extra = [f.relative_to(item.path).as_posix() for f in item_files(item)]
+    extra = [f for f in extra if f not in allowed]
+    if extra:
+        errors.append(
+            "only workflow.yml, README.md and CHANGELOG.md are allowed (catalog installs "
+            f"don't fetch other files): {', '.join(extra)}"
+        )
     try:
         definition = sk["WorkflowDefinition"].from_yaml(item.path / "workflow.yml")
     except Exception as exc:  # noqa: BLE001

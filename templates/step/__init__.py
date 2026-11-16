@@ -24,6 +24,10 @@ class __CLASS__Step(StepBase):
     type_key = "__ID__"
 
     def execute(self, config: dict[str, Any], context: StepContext) -> StepResult:
+        # The engine does not call validate() before execute().
+        errors = self.validate(config)
+        if errors:
+            return StepResult(status=StepStatus.FAILED, error="; ".join(errors))
         message = config.get("message", "")
         if isinstance(message, str) and "{{" in message:
             message = evaluate_expression(message, context)

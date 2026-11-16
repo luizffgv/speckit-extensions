@@ -72,7 +72,12 @@ uv run scripts/repo.py new workflow my-flow
 uv run scripts/repo.py new step my-step
 ```
 
-This copies [`templates/`](templates/) into `extensions/<id>/`, `workflows/<id>/` or
+With [Claude Code](https://claude.com/claude-code) in this repo, you can also just
+ask for what you want: the project skills in [`.claude/skills/`](.claude/skills/)
+(`speckit-new-extension`, `speckit-new-workflow`, `speckit-new-step`,
+`speckit-release-item`) walk through scaffolding, writing, validating and versioning.
+
+The `new` command copies [`templates/`](templates/) into `extensions/<id>/`, `workflows/<id>/` or
 `steps/<id>/`. Ids are lowercase kebab-case and must match the directory name.
 
 Each item's layout:
@@ -80,7 +85,9 @@ Each item's layout:
 - **Extension**: `extension.yml`, `commands/speckit.<id>.<name>.md`, optional
   `templates/`, `scripts/`, config templates. Commands must be named `speckit.<id>.*`.
 - **Workflow**: `workflow.yml`. It can use built-in step types (`command`, `gate`,
-  `shell`, `if`, `fan-out`, ...) and any step type from `steps/`.
+  `shell`, `if`, `fan-out`, ...) and any step type from `steps/`. Only
+  `workflow.yml`, `README.md` and `CHANGELOG.md` are allowed, because catalog
+  installs fetch `workflow.yml` alone; put scripts in an extension or step type.
 - **Step type**: `step.yml` (`step.type_key` = id) and `__init__.py` with a `StepBase`
   subclass whose `type_key` matches. Other files (helper modules, data) ship as extra
   files; `README.md` and `CHANGELOG.md` don't ship.
