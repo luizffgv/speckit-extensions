@@ -1,0 +1,3 @@
+# Catalog checksums are computed over file bytes; keep them identical on every OS.
+* text=auto eol=lf
+*.zip binary

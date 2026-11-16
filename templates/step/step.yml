@@ -1,0 +1,6 @@
+step:
+  type_key: __ID__
+  name: "__NAME__"
+  version: "0.1.0"
+  author: "__AUTHOR__"
+  description: "__DESCRIPTION__"

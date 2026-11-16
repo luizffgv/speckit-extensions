@@ -1,0 +1,11 @@
+# Repository-wide settings used by scripts/repo.py to generate catalogs.
+
+[repo]
+# GitHub "owner/name" this repo is published at. Catalog URLs point here.
+github = "luizffgv/speckit-extensions"
+# Default author for new items (scaffolded by `repo.py new`).
+author = "luizffgv"
+# Default license for new items and for workflow/step catalog entries.
+license = "Unlicense"
+# Minimum Spec Kit version new items declare.
+speckit_version = ">=1.3.0"

@@ -1,0 +1,37 @@
+schema_version: "1.0"
+workflow:
+  id: "__ID__"
+  name: "__NAME__"
+  version: "0.1.0"
+  author: "__AUTHOR__"
+  description: "__DESCRIPTION__"
+
+requires:
+  speckit_version: "__SPECKIT_VERSION__"
+
+inputs:
+  spec:
+    type: string
+    required: true
+    prompt: "Describe what to build"
+  integration:
+    type: string
+    default: "auto"
+    prompt: "Integration to use ('auto' uses the project's initialized integration)"
+
+steps:
+  - id: specify
+    command: speckit.specify
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-spec
+    type: gate
+    message: "Review the generated spec before planning."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: plan
+    command: speckit.plan
+    integration: "{{ inputs.integration }}"
