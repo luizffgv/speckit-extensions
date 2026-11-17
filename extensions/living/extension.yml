@@ -1,0 +1,27 @@
+schema_version: "1.0"
+
+extension:
+  id: living
+  name: "Living Specs"
+  version: "0.1.0"
+  description: "Archive a delivered feature's derived artifacts so only its living spec and durable rationale remain"
+  author: luizffgv
+  repository: https://github.com/luizffgv/speckit-extensions
+  license: Unlicense
+
+requires:
+  speckit_version: ">=1.3.0"
+  tools:
+    - name: git
+      required: true
+
+provides:
+  commands:
+    - name: speckit.living.archive
+      file: commands/speckit.living.archive.md
+      description: "Archive a delivered feature's derived artifacts (plan.md, tasks.md, checklists/) after moving their durable rationale into research.md, and mark its spec Living"
+
+tags:
+  - "living-spec"
+  - "retention"
+  - "archive"
