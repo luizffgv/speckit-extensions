@@ -1,0 +1,27 @@
+schema_version: "1.0"
+
+preset:
+  id: "__ID__"
+  name: "__NAME__"
+  version: "0.1.0"
+  description: "__DESCRIPTION__"
+  author: "__AUTHOR__"
+  repository: "https://github.com/__GITHUB__"
+  license: "__LICENSE__"
+
+requires:
+  speckit_version: "__SPECKIT_VERSION__"
+  # extensions:            # advisory; warned about after install, never auto-installed
+  #   - "some-extension"
+
+provides:
+  templates:
+    # strategy: replace (default) | prepend | append | wrap ({CORE_TEMPLATE})
+    - type: "command"
+      name: "speckit.specify"
+      file: "commands/speckit.specify.md"
+      description: "Example: add guidance around the core specify command"
+      strategy: "wrap"
+
+tags:
+  - "__ID__"

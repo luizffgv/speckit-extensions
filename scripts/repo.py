@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Maintenance tool for this repository of Spec Kit extensions, workflows and steps.
+"""Maintenance tool for this repository of Spec Kit extensions, presets, workflows and steps.
 
 Run with ``uv run scripts/repo.py <command>``:
 
-    new {extension,workflow,step} <id>   scaffold a new item from templates/
+    new {extension,preset,workflow,step} <id>
+                                         scaffold a new item from templates/
     validate [ITEM_DIR ...]              validate items with Spec Kit's own validators
-    catalog [--check]                    regenerate (or verify) the three catalog.json files
-    package <extension-id> [-o DIR]      build an extension's release zip
+    catalog [--check]                    regenerate (or verify) every catalog.json
+    package <id or kind/id> [-o DIR]     build an extension's or preset's release zip
     release [--dry-run]                  tag + publish a GitHub release for every
                                          catalog version that has no tag yet
 """
@@ -44,6 +45,7 @@ IGNORED_PARTS = {"__pycache__", ".DS_Store"}
 KINDS = {
     # kind: (directory, manifest file, catalog collection key)
     "extension": ("extensions", "extension.yml", "extensions"),
+    "preset": ("presets", "preset.yml", "presets"),
     "workflow": ("workflows", "workflow.yml", "workflows"),
     "step": ("steps", "step.yml", "steps"),
 }
@@ -68,8 +70,7 @@ class Item:
     @property
     def meta(self) -> dict[str, Any]:
         """The id/name/version/... block of the manifest."""
-        key = {"extension": "extension", "workflow": "workflow", "step": "step"}[self.kind]
-        block = self.manifest.get(key)
+        block = self.manifest.get(self.kind)
         return block if isinstance(block, dict) else {}
 
     @property
@@ -96,7 +97,7 @@ def load_item(path: Path) -> Item:
             if not isinstance(data, dict):
                 raise RepoError(f"{manifest_path.relative_to(ROOT)}: must be a YAML mapping")
             return Item(kind, path.name, path, data)
-    raise RepoError(f"{path}: not an item directory (expected extensions/<id>, workflows/<id> or steps/<id>)")
+    raise RepoError(f"{path}: not an item directory (expected extensions/<id>, presets/<id>, workflows/<id> or steps/<id>)")
 
 
 def discover(kind: str | None = None) -> list[Item]:
@@ -160,6 +161,7 @@ def speckit():
     except ImportError as exc:  # pragma: no cover
         raise RepoError("specify-cli is not importable; run via `uv run scripts/repo.py ...`") from exc
     from specify_cli.extensions import ExtensionManifest, ValidationError
+    from specify_cli.presets import PresetManifest, PresetValidationError
     from specify_cli.workflows import STEP_REGISTRY, load_custom_steps
     from specify_cli.workflows.base import StepBase
     from specify_cli.workflows.engine import WorkflowDefinition, validate_workflow
@@ -208,6 +210,30 @@ def validate_extension(item: Item, sk: dict[str, Any]) -> list[str]:
         rel = entry.get("template") if isinstance(entry, dict) else None
         if rel and not (item.path / rel).is_file():
             errors.append(f"provides.config: template not found: {rel}")
+    return errors
+
+
+# Placeholder a `wrap` contribution must contain, by contribution type.
+WRAP_PLACEHOLDERS = {"template": "{CORE_TEMPLATE}", "command": "{CORE_TEMPLATE}", "script": "$CORE_SCRIPT"}
+
+
+def validate_preset(item: Item, sk: dict[str, Any]) -> list[str]:
+    errors = _common_checks(item)
+    try:
+        sk["PresetManifest"](item.path / "preset.yml")
+    except sk["PresetValidationError"] as exc:
+        return errors + [str(exc)]
+    for entry in (item.manifest.get("provides") or {}).get("templates") or []:
+        rel, kind = entry.get("file"), entry.get("type")
+        strategy = str(entry.get("strategy", "replace")).lower()
+        f = item.path / rel if rel else None
+        if not f or not f.is_file():
+            errors.append(f"provides.templates: file not found: {rel}")
+            continue
+        if strategy == "wrap" and WRAP_PLACEHOLDERS.get(kind, "") not in f.read_text(encoding="utf-8"):
+            errors.append(f"{rel}: strategy 'wrap' needs the {WRAP_PLACEHOLDERS.get(kind)} placeholder")
+        if kind == "script" and strategy in ("prepend", "append"):
+            errors.append(f"{rel}: scripts support only 'replace' and 'wrap'")
     return errors
 
 
@@ -283,14 +309,21 @@ def validate_workflow(item: Item, sk: dict[str, Any]) -> list[str]:
     return errors + sk["validate_workflow"](definition)
 
 
-VALIDATORS = {"extension": validate_extension, "workflow": validate_workflow, "step": validate_step}
+VALIDATORS = {
+    "extension": validate_extension,
+    "preset": validate_preset,
+    "workflow": validate_workflow,
+    "step": validate_step,
+}
+# Kinds released as a zip attached to the GitHub release.
+ZIPPED_KINDS = {"extension", "preset"}
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
     sk = speckit()
     items = [load_item(Path(p)) for p in args.paths] if args.paths else discover()
     # Steps are validated (and loaded) first so workflows may use them.
-    items.sort(key=lambda i: ["step", "extension", "workflow"].index(i.kind))
+    items.sort(key=lambda i: ["step", "extension", "preset", "workflow"].index(i.kind))
     scratch = load_repo_steps(sk, discover("step"))
     failed = 0
     try:
@@ -315,7 +348,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------------------
 
 
-def build_extension_zip(item: Item) -> bytes:
+def build_zip(item: Item) -> bytes:
     """Byte-for-byte reproducible zip: sorted entries, fixed timestamps, stored."""
     import io
 
@@ -336,10 +369,20 @@ def zip_name(item: Item) -> str:
 
 
 def cmd_package(args: argparse.Namespace) -> int:
-    item = load_item(ROOT / "extensions" / args.id)
+    if "/" in args.id:
+        item = load_item(ROOT / args.id)
+        if item.kind not in ZIPPED_KINDS:
+            raise RepoError(f"{item.rel}: only extensions and presets are packaged")
+    else:
+        matches = [ROOT / KINDS[k][0] / args.id for k in sorted(ZIPPED_KINDS)]
+        matches = [m for m in matches if m.is_dir()]
+        if len(matches) != 1:
+            hint = " (pass extensions/<id> or presets/<id>)" if matches else ""
+            raise RepoError(f"expected one extension or preset named {args.id!r}, found {len(matches)}{hint}")
+        item = load_item(matches[0])
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
-    data = build_extension_zip(item)
+    data = build_zip(item)
     (out / zip_name(item)).write_bytes(data)
     print(f"{out / zip_name(item)}  sha256={sha256(data)}")
     return 0
@@ -376,7 +419,7 @@ def extension_entry(item: Item) -> dict[str, Any]:
         "author": meta.get("author", CONFIG["author"]),
         "version": item.version,
         "download_url": f"https://github.com/{GITHUB}/releases/download/{item.tag}/{zip_name(item)}",
-        "sha256": sha256(build_extension_zip(item)),
+        "sha256": sha256(build_zip(item)),
         **_docs(item),
         "homepage": _blob(item.tag, item.rel),
         "license": meta.get("license", CONFIG["license"]),
@@ -392,6 +435,31 @@ def extension_entry(item: Item) -> dict[str, Any]:
         entry["provides"]["hooks"] = len(m["hooks"])
     entry["tags"] = list(m.get("tags") or [])
     return entry
+
+
+def preset_entry(item: Item) -> dict[str, Any]:
+    meta, m = item.meta, item.manifest
+    contributions = (m.get("provides") or {}).get("templates") or []
+    counts = {"templates": 0, "commands": 0, "scripts": 0}
+    for c in contributions:
+        key = {"template": "templates", "command": "commands", "script": "scripts"}.get(c.get("type"))
+        if key:
+            counts[key] += 1
+    return {
+        "id": item.id,
+        "name": meta.get("name", item.id),
+        "description": meta.get("description", ""),
+        "author": meta.get("author", CONFIG["author"]),
+        "version": item.version,
+        "download_url": f"https://github.com/{GITHUB}/releases/download/{item.tag}/{zip_name(item)}",
+        "sha256": sha256(build_zip(item)),
+        **_docs(item),
+        "homepage": _blob(item.tag, item.rel),
+        "license": meta.get("license", CONFIG["license"]),
+        "requires": m.get("requires") or {},
+        "provides": counts,
+        "tags": list(m.get("tags") or []),
+    }
 
 
 def workflow_entry(item: Item) -> dict[str, Any]:
@@ -436,7 +504,12 @@ def step_entry(item: Item) -> dict[str, Any]:
     return entry
 
 
-ENTRY_BUILDERS = {"extension": extension_entry, "workflow": workflow_entry, "step": step_entry}
+ENTRY_BUILDERS = {
+    "extension": extension_entry,
+    "preset": preset_entry,
+    "workflow": workflow_entry,
+    "step": step_entry,
+}
 
 
 def _now() -> str:
@@ -514,9 +587,9 @@ def cmd_release(args: argparse.Namespace) -> int:
             title = f"{item.meta.get('name', item.id)} {item.version} ({item.kind})"
             notes = f"{item.kind.capitalize()} `{item.id}` version {item.version}.\n\nSee {item.rel}/CHANGELOG.md."
             cmd = ["gh", "release", "create", item.tag, "--target", head, "--title", title, "--notes", notes]
-            if item.kind == "extension":
+            if item.kind in ZIPPED_KINDS:
                 asset = Path(tmp) / zip_name(item)
-                asset.write_bytes(build_extension_zip(item))
+                asset.write_bytes(build_zip(item))
                 cmd.append(str(asset))
             print(("would run: " if args.dry_run else "") + " ".join(cmd))
             if not args.dry_run:
@@ -586,7 +659,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     s.add_argument("--check", action="store_true", help="fail if catalogs are stale instead of writing")
     s.set_defaults(func=cmd_catalog)
 
-    s = sub.add_parser("package", help="build an extension release zip")
+    s = sub.add_parser("package", help="build an extension or preset release zip")
     s.add_argument("id")
     s.add_argument("-o", "--output", default=str(ROOT / "dist"))
     s.set_defaults(func=cmd_package)

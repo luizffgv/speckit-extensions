@@ -1,0 +1,143 @@
+schema_version: "1.0"
+workflow:
+  id: "living-speckit"
+  name: "Full SDD Cycle with Living Archive"
+  version: "0.1.0"
+  author: "luizffgv"
+  description: "Runs specify (with living-spec deltas) → plan → tasks → analyze and fix → implement with review gates, then archives and merges the deltas"
+
+# Spec Kit's bundled "speckit" workflow (Full SDD Cycle 1.0.1) plus an
+# analyze-and-fix loop and speckit.living.archive. Needs the "living" extension
+# and the "living" preset, which makes speckit.specify also write deltas to
+# existing living specs and plan, tasks and analyze cover them.
+requires:
+  speckit_version: ">=1.3.0"
+
+inputs:
+  spec:
+    type: string
+    required: true
+    prompt: "Describe what you want to build"
+  integration:
+    type: string
+    default: "auto"
+    prompt: "Integration to use (e.g. claude, copilot, gemini; 'auto' uses the project's initialized integration)"
+
+steps:
+  - id: specify
+    command: speckit.specify
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-spec
+    type: gate
+    message: "Review the generated spec before planning, including its Changes to Living Specs section (deltas to existing living specs; check any marked unsure)."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: plan
+    command: speckit.plan
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-plan
+    type: gate
+    message: "Review the plan before generating tasks."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: tasks
+    command: speckit.tasks
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  # Analyze spec, plan and tasks. While it reports CRITICAL or HIGH findings,
+  # the agent fixes the artifacts and analysis runs again (up to 3 fixes, each
+  # one re-checked). The marker line is how the workflow reads the verdict: a
+  # missing marker counts as unresolved issues. MEDIUM and LOW findings don't
+  # block; they stay visible in the report.
+  - id: analyze
+    command: speckit.analyze
+    integration: "{{ inputs.integration }}"
+    capture: true
+    input:
+      args: "This is an automated run: do not ask questions or offer remediation. After the report, end your response with a final line that is exactly `ANALYSIS: CLEAN` if there are no CRITICAL or HIGH findings, or `ANALYSIS: ISSUES` otherwise."
+
+  - id: analysis-fixes
+    type: if
+    condition: "{{ 'ANALYSIS: CLEAN' not in steps.analyze.output.stdout }}"
+    then:
+      - id: fix-loop
+        type: do-while
+        max_iterations: 3
+        condition: "{{ 'ANALYSIS: CLEAN' not in steps.reanalyze.output.stdout }}"
+        steps:
+          - id: fix
+            type: prompt
+            integration: "{{ inputs.integration }}"
+            prompt: |
+              The cross-artifact analysis below found CRITICAL or HIGH issues in the current
+              feature's spec.md, plan.md and tasks.md. Fix every CRITICAL and HIGH finding by
+              editing those artifacts (and the constitution only if a finding says it is wrong);
+              fix MEDIUM and LOW findings too where it is cheap and safe. Keep the spec's intent;
+              where a finding needs a product decision you cannot make, choose the most
+              conservative option and note it under the spec's Assumptions. A fix that changes
+              behavior another living spec owns goes in the spec's `## Changes to Living Specs`
+              section (same format as its existing entries), never in this spec's own
+              requirements. Do not edit other specs, and do not implement any code.
+
+              Analysis report:
+
+              {{ steps.reanalyze.output.stdout | default(steps.analyze.output.stdout) }}
+
+          - id: reanalyze
+            command: speckit.analyze
+            integration: "{{ inputs.integration }}"
+            capture: true
+            input:
+              args: "This is an automated run: do not ask questions or offer remediation. After the report, end your response with a final line that is exactly `ANALYSIS: CLEAN` if there are no CRITICAL or HIGH findings, or `ANALYSIS: ISSUES` otherwise."
+
+      - id: save-report
+        type: shell
+        strict: true
+        env:
+          REPORT: "{{ steps.reanalyze.output.stdout }}"
+          RUN_ID: "{{ context.run_id }}"
+        run: 'printf "%s\n" "$REPORT" > ".specify/workflows/runs/$RUN_ID/analysis-report.md"'
+
+      - id: check-analysis
+        type: if
+        condition: "{{ 'ANALYSIS: CLEAN' not in steps.reanalyze.output.stdout }}"
+        then:
+          - id: analysis-unresolved
+            type: gate
+            message: "Analysis still reports CRITICAL or HIGH issues after 3 rounds of automatic fixes (last report below). The run stops here: fix the artifacts, run analyze again, then continue with implement manually."
+            show_file: ".specify/workflows/runs/{{ context.run_id }}/analysis-report.md"
+            options: [abort]
+            on_reject: abort
+
+      - id: review-fixes
+        type: gate
+        message: "Analysis is clean after automatic fixes to spec.md, plan.md and tasks.md. Review those changes (e.g. git diff) before implementing; the last report is below."
+        show_file: ".specify/workflows/runs/{{ context.run_id }}/analysis-report.md"
+        options: [approve, reject]
+        on_reject: abort
+
+  - id: implement
+    command: speckit.implement
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-implementation
+    type: gate
+    message: "Review the implementation and commit it before archiving. Archiving deletes plan.md, tasks.md and checklists/, and stops if the feature directory has uncommitted changes or open tasks. Reject to stop here and archive later."
+    options: [approve, reject]
+    on_reject: abort
+
+  - id: archive
+    command: speckit.living.archive
+    integration: "{{ inputs.integration }}"

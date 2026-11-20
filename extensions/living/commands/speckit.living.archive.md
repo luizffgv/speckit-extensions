@@ -1,5 +1,5 @@
 ---
-description: "Archive a delivered feature's derived artifacts (plan.md, tasks.md, checklists/) after moving their durable rationale into research.md, and mark its spec Living"
+description: "Archive a delivered feature's derived artifacts (plan.md, tasks.md, checklists/) after moving their durable rationale into research.md, merge its deltas into other living specs, and mark its spec Living"
 ---
 
 # Archive Derived Artifacts
@@ -7,7 +7,9 @@ description: "Archive a delivered feature's derived artifacts (plan.md, tasks.md
 This command supports **spec-anchored living specs**: `spec.md` is the contract for a feature's
 current behavior, and `plan.md`, `tasks.md` and `checklists/` are derivations that describe how it
 was built. Once the feature is delivered they go stale and mislead later readers, so this command
-removes them, after keeping whatever is worth keeping.
+removes them, after keeping whatever is worth keeping. If the feature changed other living specs,
+its `spec.md` records those changes as deltas (`__SPECKIT_COMMAND_LIVING_DELTA__`), and this
+command merges them into those specs.
 
 Run it as the **last commit of a feature's PR**, after reviews and once implementation is complete
 (`__SPECKIT_COMMAND_IMPLEMENT__` finished, and any verification command you use reports no
@@ -80,10 +82,12 @@ Accepted input:
 - `FEATURE_DIR/spec.md` exists. If its `**Status**` is `Retired` (the feature itself was removed
   from the product), stop: there is nothing to archive.
 - At least one archivable artifact (`plan.md`, `tasks.md`, `checklists/`) exists. If none does,
-  report that the feature is already archived and only check the spec header (step 6).
+  report that the feature is already archived and only check the spec header (step 7).
 - The files under `FEATURE_DIR` have no uncommitted changes (`git status --porcelain -- FEATURE_DIR`).
   If they do, stop and ask the user to commit or discard them first, so the deletion is a clean,
   reviewable diff.
+- If `FEATURE_DIR/spec.md` has a `## Changes to Living Specs` section with deltas, every target it
+  names exists, has `**Status**: Living`, and has no uncommitted changes. If not, stop and explain.
 
 ## Execution
 
@@ -118,8 +122,10 @@ Do **not** keep: task lists, progress, phase plans, dates of work, waivers, chec
 anything superseded by later changes, or anything the code or its README already says.
 
 Content that describes *intended behavior* (a requirement, an edge case, an assumption about
-behavior) belongs in `spec.md`, not `research.md`; if you find any that `spec.md` lacks, that is
-spec drift: stop, show it to the user, and recommend correcting `spec.md` first.
+behavior) belongs in `spec.md` (or, for behavior another living spec owns, in a delta), not
+`research.md`; if you find any that neither `spec.md` nor its deltas cover, that is spec drift:
+stop, show it to the user, and recommend correcting `spec.md` first (for changes to other living
+specs, with `__SPECKIT_COMMAND_LIVING_DELTA__`).
 
 ### 3. Write the rationale into `research.md`
 
@@ -141,14 +147,44 @@ spec drift: stop, show it to the user, and recommend correcting `spec.md` first.
   Omit empty subsections. Write it as present-tense fact, not as a history of the work.
 - If nothing qualifies, write nothing and say so.
 
-### 4. Check references to the files being archived
+### 4. Merge deltas into the living specs
+
+Skip this step if `FEATURE_DIR/spec.md` has no `## Changes to Living Specs` section. If the section
+says `None: …`, only remove it (last bullet below).
+
+**Check every delta first, change nothing until all pass.** For each target subsection:
+
+- Every `MODIFIED` and `REMOVED` item exists in the target's `spec.md` and its current text matches
+  `Was` (ignoring whitespace and line wrapping).
+- Any `Why` marked `(unsure: …)` was resolved. In an interactive run, ask; in a non-interactive
+  run, stop.
+
+If any check fails, the target changed since the delta was written: stop, show each mismatch
+(expected `Was` versus the current text), and recommend re-running
+`__SPECKIT_COMMAND_LIVING_DELTA__`. Do not delete anything.
+
+Then, unless `--dry-run`, apply each target's delta to its `spec.md`:
+
+- **MODIFIED**: replace the item's text with `Now`, keeping its ID and position.
+- **ADDED**: append the item to the named section, giving it the next free ID of that kind
+  (`FR-`, `SC-`, …) in the target; items without IDs (stories, edge cases, assumptions) go at the
+  end of their section in the target's style. Never reuse a removed ID.
+- **REMOVED**: delete the item. Do not renumber the remaining items.
+- Update the target's header: `**Last Updated**` to today's date (add it after `**Status**` if
+  missing), and add or update `**Last changed by**: <FEATURE_DIR>` after it.
+- Change nothing else in the target.
+
+Finally, remove the `## Changes to Living Specs` section from `FEATURE_DIR/spec.md`; step 7
+records which specs were updated.
+
+### 5. Check references to the files being archived
 
 Search the whole repository (excluding `node_modules/`, `.git/` and `FEATURE_DIR` itself) for links
 or mentions of each file to be deleted, e.g. `<feature-name>/plan.md`, `<feature-name>/tasks.md`,
 `<feature-name>/checklists/`. For each hit, either rewrite it to point at `spec.md` / `research.md`
 or drop the mention. Report every edit. Do the same for any `--also` artifacts.
 
-### 5. Delete the archived artifacts
+### 6. Delete the archived artifacts
 
 Unless `--dry-run`, delete (with `git rm`) the artifacts being archived. By default:
 
@@ -165,7 +201,7 @@ Unless `--dry-run`, delete (with `git rm`) the artifacts being archived. By defa
 
 Apply `--keep` and `--also`. Never delete `spec.md` or `research.md`.
 
-### 6. Update the spec header
+### 7. Update the spec header
 
 In `FEATURE_DIR/spec.md`:
 
@@ -178,9 +214,13 @@ In `FEATURE_DIR/spec.md`:
   `git log --diff-filter=D --name-only -- <FEATURE_DIR>`)
   ```
 
-  listing the artifacts actually archived. Change nothing else in `spec.md`.
+  listing the artifacts actually archived.
+- If step 4 merged deltas, add or update, right after `**Archived artifacts**`:
+  `**Updated living specs**: specs/001-user-auth, specs/004-billing` (the targets).
 
-### 7. Do not commit
+Change nothing else in `spec.md` (step 4 already removed its deltas section).
+
+### 8. Do not commit
 
 Leave the changes staged or in the working tree for the user to review and commit as part of the
 feature's PR.
@@ -197,12 +237,14 @@ Report:
 - `PROJECT_ROOT`, `FEATURE_DIR` and how it was resolved.
 - Artifacts archived and artifacts kept.
 - What was moved into `research.md` (or "nothing").
+- Living specs updated from deltas, with what changed in each (or "none").
 - References rewritten in other files.
 - A **PR notes** block, ready to paste into the PR description:
 
   ```markdown
   ### Archived derived artifacts (<feature>)
   - Archived: plan.md, tasks.md, checklists/
+  - Living specs updated: <target — one-line summary of its changes>, or "none"
   - Rationale kept in research.md: <one line, or "none needed">
   - Waived tasks: <ID — summary — waived by/why — what stays unverified>, or "none"
   ```
@@ -213,8 +255,11 @@ Report:
 
 ## Guardrails
 
-- Never delete `spec.md` or `research.md`, and never edit `spec.md` beyond its header lines.
+- Never delete `spec.md` or `research.md`, and never edit `spec.md` beyond its header lines and
+  removing its merged deltas section.
+- Never edit another living spec except to apply this feature's deltas (and its header lines), and
+  never apply a delta whose `Was` text no longer matches.
 - Never record waived tasks or unchecked checklist items in a file that persists after the work.
-- Never touch files outside `PROJECT_ROOT`, except rewriting references found in step 4.
+- Never touch files outside `PROJECT_ROOT`, except rewriting references found in step 5.
 - Never run on a feature with unwaived open tasks.
 - Never commit, push or rewrite history.

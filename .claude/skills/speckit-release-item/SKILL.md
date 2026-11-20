@@ -1,14 +1,14 @@
 ---
 name: speckit-release-item
 description: Bump an item's version, changelog and catalog for release.
-when_to_use: After changing an already-released extension, workflow or step type, when validation reports "content changed since release", or when asked to release, publish or bump an item.
+when_to_use: After changing an already-released extension, preset, workflow or step type, when validation reports "content changed since release", or when asked to release, publish or bump an item.
 ---
 
 # Release a new version of an item
 
 Releases happen automatically: when a commit on `main` lists a version in a
 `catalog.json` that has no tag yet, CI creates a GitHub release tagged
-`<kind>-<id>-v<version>` (with a zip for extensions). This skill only gets the
+`<kind>-<id>-v<version>` (with a zip for extensions and presets). This skill only gets the
 change ready to merge. Never create tags or releases by hand, and don't push
 unless the user asks.
 
@@ -29,7 +29,8 @@ unless the user asks.
      backwards-compatible behaviour change.
    - **patch:** fixes, wording, docs.
 3. **Bump the version** in the manifest: `extension.version` in `extension.yml`,
-   `workflow.version` in `workflow.yml`, or `step.version` in `step.yml`.
+   `preset.version` in `preset.yml`, `workflow.version` in `workflow.yml`, or `step.version` in
+   `step.yml`.
 4. **Add a changelog entry** at the top of the item's `CHANGELOG.md`:
    `## X.Y.Z` followed by short bullets that say what users notice.
 5. **Validate and regenerate**:

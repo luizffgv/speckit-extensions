@@ -5,6 +5,7 @@ Spec Kit add-ons, published as installable catalogs:
 | Kind | Source | Catalog |
 | --- | --- | --- |
 | Extensions (commands, hooks, templates) | [`extensions/`](extensions/) | [`extensions/catalog.json`](extensions/catalog.json) |
+| Presets (changes to core commands and templates) | [`presets/`](presets/) | [`presets/catalog.json`](presets/catalog.json) |
 | Workflows | [`workflows/`](workflows/) | [`workflows/catalog.json`](workflows/catalog.json) |
 | Workflow step types | [`steps/`](steps/) | [`steps/catalog.json`](steps/catalog.json) |
 
@@ -23,6 +24,10 @@ specify extension catalog add https://raw.githubusercontent.com/luizffgv/speckit
 ```
 
 ```bash
+specify preset catalog add https://raw.githubusercontent.com/luizffgv/speckit-extensions/main/presets/catalog.json --name luizffgv --install-allowed
+```
+
+```bash
 specify workflow catalog add https://raw.githubusercontent.com/luizffgv/speckit-extensions/main/workflows/catalog.json --name luizffgv
 ```
 
@@ -37,6 +42,10 @@ specify extension add <id>
 ```
 
 ```bash
+specify preset add <id>
+```
+
+```bash
 specify workflow step add <id>
 ```
 
@@ -44,11 +53,13 @@ specify workflow step add <id>
 specify workflow add <id>
 ```
 
-Install a workflow's custom step types before the workflow.
+Install a workflow's extensions, presets and custom step types before the workflow; its README
+lists them.
 
 > **Note:** a project catalog file (`.specify/*-catalogs.yml`) replaces Spec Kit's
 > built-in catalog list. If you still want the official catalogs, add them back too,
-> for example `https://raw.githubusercontent.com/github/spec-kit/main/extensions/catalog.json`.
+> for example `https://raw.githubusercontent.com/github/spec-kit/main/extensions/catalog.json`
+> (or `presets/catalog.json` for the official presets).
 
 To try one item without adding a catalog:
 
@@ -65,6 +76,10 @@ uv run scripts/repo.py new extension my-ext
 ```
 
 ```bash
+uv run scripts/repo.py new preset my-preset
+```
+
+```bash
 uv run scripts/repo.py new workflow my-flow
 ```
 
@@ -74,16 +89,19 @@ uv run scripts/repo.py new step my-step
 
 With [Claude Code](https://claude.com/claude-code) in this repo, you can also just
 ask for what you want: the project skills in [`.claude/skills/`](.claude/skills/)
-(`speckit-new-extension`, `speckit-new-workflow`, `speckit-new-step`,
+(`speckit-new-extension`, `speckit-new-preset`, `speckit-new-workflow`, `speckit-new-step`,
 `speckit-release-item`) walk through scaffolding, writing, validating and versioning.
 
-The `new` command copies [`templates/`](templates/) into `extensions/<id>/`, `workflows/<id>/` or
-`steps/<id>/`. Ids are lowercase kebab-case and must match the directory name.
+The `new` command copies [`templates/`](templates/) into `extensions/<id>/`, `presets/<id>/`,
+`workflows/<id>/` or `steps/<id>/`. Ids are lowercase kebab-case and must match the directory name.
 
 Each item's layout:
 
 - **Extension**: `extension.yml`, `commands/speckit.<id>.<name>.md`, optional
   `templates/`, `scripts/`, config templates. Commands must be named `speckit.<id>.*`.
+- **Preset**: `preset.yml` and the files it provides (`commands/`, `templates/`, `scripts/`).
+  Prefer `wrap`, `prepend` or `append` over `replace` for core commands, so Spec Kit upgrades
+  still apply. An extension and a preset may share an id.
 - **Workflow**: `workflow.yml`. It can use built-in step types (`command`, `gate`,
   `shell`, `if`, `fan-out`, ...) and any step type from `steps/`. Only
   `workflow.yml`, `README.md` and `CHANGELOG.md` are allowed, because catalog
@@ -92,7 +110,7 @@ Each item's layout:
   subclass whose `type_key` matches. Other files (helper modules, data) ship as extra
   files; `README.md` and `CHANGELOG.md` don't ship.
 
-All three also need a `README.md`; keep a `CHANGELOG.md` too.
+All of them also need a `README.md`; keep a `CHANGELOG.md` too.
 
 ### Checking your work
 
@@ -100,7 +118,8 @@ All three also need a `README.md`; keep a `CHANGELOG.md` too.
 uv run scripts/repo.py validate
 ```
 
-This runs Spec Kit's own manifest, workflow and step-package validators. Workflows
+This runs Spec Kit's own manifest, workflow and step-package validators, and checks that preset
+`wrap` files contain their placeholder. Workflows
 are checked with this repo's step types loaded. It also fails if an item has
 changed since its released version was tagged.
 
@@ -108,6 +127,10 @@ To try an item in a real project:
 
 ```bash
 specify extension add --dev /path/to/speckit-extensions/extensions/<id>
+```
+
+```bash
+specify preset add --dev /path/to/speckit-extensions/presets/<id>
 ```
 
 ```bash
@@ -130,10 +153,10 @@ Versions are released by merging to `main`; there is no manual tagging.
 2. Run `uv run scripts/repo.py catalog` and commit the updated `catalog.json`.
 3. Merge to `main`. CI validates, then `repo.py release` creates a GitHub release
    tagged `<kind>-<id>-v<version>` (for example `extension-my-ext-v1.2.0`) for every
-   version without a tag. Extension releases include the `<id>-<version>.zip` asset.
+   version without a tag. Extension and preset releases include the `<id>-<version>.zip` asset.
 
 Catalog entries point at those tags, so an installed version never changes after
-release. Checksums are computed from the source. Extension zips are built
+release. Checksums are computed from the source. Extension and preset zips are built
 reproducibly, so `catalog.json` can be generated before the release exists.
 CI fails if a catalog is stale or a released item changed without a version bump.
 

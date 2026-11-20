@@ -1,16 +1,16 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-11-16T10:05:28Z",
+  "updated_at": "2026-11-19T19:33:12Z",
   "catalog_url": "https://raw.githubusercontent.com/luizffgv/speckit-extensions/main/extensions/catalog.json",
   "extensions": {
     "living": {
       "id": "living",
       "name": "Living Specs",
-      "description": "Archive a delivered feature's derived artifacts so only its living spec and durable rationale remain",
+      "description": "Keep specs living: record a feature's changes to other living specs, then archive its derived artifacts and merge those changes",
       "author": "luizffgv",
       "version": "0.1.0",
       "download_url": "https://github.com/luizffgv/speckit-extensions/releases/download/extension-living-v0.1.0/living-0.1.0.zip",
-      "sha256": "a05617861769bb9fb20f9009e2ca114b8b6c49e404a16ac1a791d367d0783ea0",
+      "sha256": "a4b797af7c8f870c753a49677280b465d6a48fe2a14eb6ab1bddd863cdcdff8e",
       "repository": "https://github.com/luizffgv/speckit-extensions",
       "documentation": "https://github.com/luizffgv/speckit-extensions/blob/extension-living-v0.1.0/extensions/living/README.md",
       "changelog": "https://github.com/luizffgv/speckit-extensions/blob/extension-living-v0.1.0/extensions/living/CHANGELOG.md",
@@ -26,15 +26,17 @@
         ]
       },
       "provides": {
-        "commands": 1
+        "commands": 2,
+        "hooks": 1
       },
       "tags": [
         "living-spec",
         "retention",
-        "archive"
+        "archive",
+        "delta"
       ],
       "created_at": "2026-11-16T10:05:28Z",
-      "updated_at": "2026-11-16T10:05:28Z"
+      "updated_at": "2026-11-19T19:33:12Z"
     }
   }
 }
