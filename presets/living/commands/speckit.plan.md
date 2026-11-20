@@ -27,6 +27,10 @@ Follow the plan instructions below with these additions. Where they conflict, th
 5. **Constitution Check** also covers the delta changes.
 6. **Never edit another spec.** If planning shows a delta is wrong or missing, say so in the
    completion report and recommend fixing the spec (or `__SPECKIT_COMMAND_LIVING_DELTA__`)
-   before tasks.
+   before tasks. That includes design decisions that settle user-visible behavior a target owns
+   (accepted values, defaults, matching, validation order, messages) when its delta doesn't state
+   them: list each one as missing from the delta. Incidental text the target never specified
+   (usage or help text) and choices the target's unchanged text already settles are not missing;
+   describe such text's new form, if it changes, in this feature's `contracts/`.
 
 {CORE_TEMPLATE}

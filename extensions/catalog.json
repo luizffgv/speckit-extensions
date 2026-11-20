@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-11-19T19:33:12Z",
+  "updated_at": "2026-11-20T05:50:07Z",
   "catalog_url": "https://raw.githubusercontent.com/luizffgv/speckit-extensions/main/extensions/catalog.json",
   "extensions": {
     "living": {
@@ -10,7 +10,7 @@
       "author": "luizffgv",
       "version": "0.1.0",
       "download_url": "https://github.com/luizffgv/speckit-extensions/releases/download/extension-living-v0.1.0/living-0.1.0.zip",
-      "sha256": "a4b797af7c8f870c753a49677280b465d6a48fe2a14eb6ab1bddd863cdcdff8e",
+      "sha256": "7d83178004c20a17339bfa2695421e5c6041aadc6ecefc47e9501a5909c5617d",
       "repository": "https://github.com/luizffgv/speckit-extensions",
       "documentation": "https://github.com/luizffgv/speckit-extensions/blob/extension-living-v0.1.0/extensions/living/README.md",
       "changelog": "https://github.com/luizffgv/speckit-extensions/blob/extension-living-v0.1.0/extensions/living/CHANGELOG.md",
@@ -36,7 +36,7 @@
         "delta"
       ],
       "created_at": "2026-11-16T10:05:28Z",
-      "updated_at": "2026-11-19T19:33:12Z"
+      "updated_at": "2026-11-20T05:50:07Z"
     }
   }
 }

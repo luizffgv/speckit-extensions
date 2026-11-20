@@ -67,6 +67,13 @@ The current spec owns the **new** capability; each target owns its **existing** 
   remaining IDs to close the gaps (nothing refers to them yet); otherwise leave the gaps.
 - If a delta needs a new requirement in the target, it goes in the delta, not in the current
   spec.
+- The same goes for details of a target's behavior stated anywhere in the current spec,
+  including Assumptions and Edge Cases: accepted values and input forms, defaults, matching
+  rules, validation and its order, user-visible messages. Move them into the target's delta.
+- Record only what the feature adds or changes. Do not add items that restate what the target's
+  unchanged text already guarantees (e.g. "MUST NOT show the priority" when the target's line
+  format stays as it is), or that pin incidental text the target never specified (usage or help
+  text) unless the feature is about it. When refreshing, remove existing items of either kind.
 
 ### 4. Write the deltas section
 
@@ -107,7 +114,8 @@ Rules:
   without IDs (stories, edge cases, assumptions, entities), by its heading or a short quote. `Was`
   quotes the target's **current text exactly**: archive uses it to detect that the target changed
   in the meantime.
-- **ADDED** items carry no ID; archive assigns the next free ID in the target. Write them in the
+- **ADDED** items carry no ID; archive assigns the next free ID in the target. Start each with
+  its target section in parentheses (`- (Functional Requirements) …`) and write it in the
   target's own style (`System MUST …`, `Given/When/Then`).
 - `Now` and `ADDED` text is the complete new statement, never a diff or "same as before, plus …".
 - Write behavior only (what, not how), as everywhere in a spec.

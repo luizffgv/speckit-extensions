@@ -9,8 +9,15 @@
   - MODIFIED and REMOVED name the target item by ID (FR-003, SC-004) or, for items
     without IDs, by heading or short quote. "Was" quotes the target's current text
     exactly; archive uses it to detect that the target changed in the meantime.
-  - ADDED items carry no ID (archive assigns the next free one), written in the
-    target's own style. "Now" and ADDED text are complete statements, never diffs.
+  - ADDED items carry no ID (archive assigns the next free one) and start with the
+    target section in parentheses, e.g. "- (Functional Requirements) System MUST ...",
+    written in the target's own style. "Now" and ADDED text are complete statements,
+    never diffs.
+  - Details of a target's behavior (accepted values, defaults, matching, messages) go in
+    its delta, never in this spec's own Assumptions or Edge Cases.
+  - Record only what this feature adds or changes: no items restating unchanged target
+    behavior (e.g. "MUST NOT show X" when the target's format is unchanged), and no
+    incidental text the target never specified (usage or help text).
   - Omit empty MODIFIED/ADDED/REMOVED blocks.
   - If no living spec is affected, keep only the line "None: no living spec's behavior changes."
 -->

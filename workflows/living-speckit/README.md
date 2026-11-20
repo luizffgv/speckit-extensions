@@ -61,16 +61,21 @@ specify workflow run living-speckit -i spec="Describe what to build"
 
    The last report is saved to `.specify/workflows/runs/<run-id>/analysis-report.md`.
 5. `speckit.implement`.
-6. A gate to review the implementation. **Commit it before approving**: the archive step stops if
-   the feature directory has uncommitted changes. Reject to stop and archive later by running
-   `speckit.living.archive` yourself.
+6. A gate to review the implementation. **Commit everything before approving**: archive refuses
+   to run on uncommitted work. After you approve, the workflow checks `git status` (ignoring
+   `.specify/workflows/runs/`); if anything is uncommitted, the gate comes back, up to 5 times,
+   and then the run stops showing what is still uncommitted. Reject to stop and archive later by
+   running `speckit.living.archive` yourself.
 7. `speckit.living.archive`: moves durable rationale into `research.md`, merges the deltas into
    the existing living specs (stopping if one changed since its delta was written), deletes
    `plan.md`, `tasks.md` and `checklists/` with `git rm`, and marks `spec.md` `Living`. It doesn't
-   commit; changes to the other specs are left in the working tree with the rest.
+   commit; changes to the other specs are left in the working tree with the rest. A final gate
+   shows its report (PR notes, suggested commit message). If archive stopped without archiving,
+   that gate shows why and the run ends as aborted, not completed.
 
 ## Side effects
 
 Agent commands write and edit files in the project. The analyze loop's fix step edits the spec,
 plan and tasks, which you review at a gate before implementing. The archive step deletes files
-(staged, not committed) and edits the living specs named in the deltas. Uses `sh` to save the analysis report after fixes.
+(staged, not committed) and edits the living specs named in the deltas. Uses `sh` to check `git status` before archiving and to save the analysis and archive reports
+under `.specify/workflows/runs/<run-id>/`.

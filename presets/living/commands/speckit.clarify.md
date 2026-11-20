@@ -17,11 +17,13 @@ Follow the clarify instructions below with these additions. Where they conflict,
    whether this feature changes a living spec are candidate questions. Name the target spec in
    the question so the user knows what existing behavior is at stake.
 3. **Record answers where the behavior belongs.** An answer about the new capability goes in
-   this spec's own sections, as usual. An answer that changes behavior a living spec owns goes
-   in that target's delta subsection (`MODIFIED` quoting the target's current text exactly in
-   `Was`, `ADDED`, or `REMOVED`), creating the subsection if needed, never in this spec's own
-   sections. An answer that confirms an unsure delta removes its `(unsure: …)` marker; one that
-   rejects it removes the delta. Log every answer in the `## Clarifications` session as usual.
+   this spec's own sections, as usual. An answer that changes behavior a living spec owns
+   goes in that target's delta subsection (`MODIFIED` quoting the target's current text
+   exactly in `Was`, `ADDED`, or `REMOVED`), creating the subsection if needed, never in this
+   spec's own sections. An answer that keeps a target's behavior as it is needs no delta: log
+   it in `## Clarifications` only. An answer that confirms an unsure delta removes its
+   `(unsure: …)` marker; one that rejects it removes the delta. Log every answer in the
+   `## Clarifications` session as usual.
 4. **Never edit another spec.**
 5. **Completion report** also lists the deltas added, changed or removed. The deltas are then
    current, so the optional delta refresh hook can be skipped.

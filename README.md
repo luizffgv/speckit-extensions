@@ -145,6 +145,9 @@ specify workflow add --dev /path/to/speckit-extensions/workflows/<id>
 specify workflow run /path/to/speckit-extensions/workflows/<id>/workflow.yml
 ```
 
+For the `living` extension, preset and workflow, [`tests/living/`](tests/living/) has a fixture
+project with two living specs, a setup script and end-to-end scenarios.
+
 ## Releasing
 
 Versions are released by merging to `main`; there is no manual tagging.

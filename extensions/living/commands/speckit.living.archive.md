@@ -127,6 +127,14 @@ behavior) belongs in `spec.md` (or, for behavior another living spec owns, in a 
 stop, show it to the user, and recommend correcting `spec.md` first (for changes to other living
 specs, with `__SPECKIT_COMMAND_LIVING_DELTA__`).
 
+The same holds for behavior a delta target owns that this feature's `spec.md` states only in its
+own sections (often Assumptions or Edge Cases) and not in that target's delta: accepted values,
+defaults, validation rules and their order, user-visible messages. Once the deltas are merged, the
+target would not state its own behavior. Treat it as spec drift too: stop and recommend moving it
+into the delta. (Interface syntax and data shapes may stay in this feature's `contracts/` and
+`data-model.md`, which are kept, and incidental text the target never specified, such as usage
+text, needs no delta.)
+
 ### 3. Write the rationale into `research.md`
 
 - If there is anything to keep, append to `FEATURE_DIR/research.md` (create it with a
@@ -166,7 +174,9 @@ If any check fails, the target changed since the delta was written: stop, show e
 Then, unless `--dry-run`, apply each target's delta to its `spec.md`:
 
 - **MODIFIED**: replace the item's text with `Now`, keeping its ID and position.
-- **ADDED**: append the item to the named section, giving it the next free ID of that kind
+- **ADDED**: the section is named in parentheses before the text (`- (Functional Requirements)
+  …`); also accept `- Functional Requirements: …`. Append the item to that section, giving it the
+  next free ID of that kind
   (`FR-`, `SC-`, …) in the target; items without IDs (stories, edge cases, assumptions) go at the
   end of their section in the target's style. Never reuse a removed ID.
 - **REMOVED**: delete the item. Do not renumber the remaining items.
@@ -175,7 +185,12 @@ Then, unless `--dry-run`, apply each target's delta to its `spec.md`:
 - Change nothing else in the target.
 
 Finally, remove the `## Changes to Living Specs` section from `FEATURE_DIR/spec.md`; step 7
-records which specs were updated.
+records which specs were updated. Then find every mention of that section or its deltas in the
+files kept in `FEATURE_DIR` (`spec.md`, `research.md`, `data-model.md`, `contracts/`,
+`quickstart.md`), e.g. with `grep -rniE 'delta|changes to living specs|Δ' FEATURE_DIR`, and rewrite
+each to name the target spec instead ("specified in the deltas below" → "specified in
+`specs/001-user-auth`"; "the 001 delta's edge case" → "the edge case in `specs/001-user-auth`").
+Repeat the search until it finds none. Report every edit.
 
 ### 5. Check references to the files being archived
 
@@ -218,7 +233,8 @@ In `FEATURE_DIR/spec.md`:
 - If step 4 merged deltas, add or update, right after `**Archived artifacts**`:
   `**Updated living specs**: specs/001-user-auth, specs/004-billing` (the targets).
 
-Change nothing else in `spec.md` (step 4 already removed its deltas section).
+Change nothing else in `spec.md` (step 4 already removed its deltas section and rewrote mentions
+of it).
 
 ### 8. Do not commit
 
@@ -255,8 +271,8 @@ Report:
 
 ## Guardrails
 
-- Never delete `spec.md` or `research.md`, and never edit `spec.md` beyond its header lines and
-  removing its merged deltas section.
+- Never delete `spec.md` or `research.md`, and never edit `spec.md` beyond its header lines,
+  removing its merged deltas section and rewriting mentions of it.
 - Never edit another living spec except to apply this feature's deltas (and its header lines), and
   never apply a delta whose `Was` text no longer matches.
 - Never record waived tasks or unchecked checklist items in a file that persists after the work.

@@ -15,13 +15,23 @@ Follow the specify instructions below with these additions. Where they conflict,
    false, incomplete or contradicted. Merely using a feature, or touching the same code, does
    not affect its spec. Specs with any other status are never affected through deltas; if the
    feature would change one, say so in the completion report.
-2. **Specify only the new capability** in the spec's own sections. Behavior an affected living
-   spec owns (changing it, adding cases to it, removing it) goes **only** in the
-   `## Changes to Living Specs` section, never in this spec's own stories, requirements or
-   success criteria. Use what the living specs already state as settled context: do not mark
-   `[NEEDS CLARIFICATION]` on anything they answer.
+2. **Specify only the new capability** in the spec's own sections. Behavior an affected
+   living spec owns (changing it, adding cases to it, removing it) goes **only** in the
+   `## Changes to Living Specs` section, never in this spec's own stories, requirements, success
+   criteria, edge cases or assumptions. That includes the details of that behavior: accepted
+   values and input forms, defaults, matching rules (e.g. case-insensitive), validation and
+   its order, user-visible messages. If you decide such a detail, write it into the target's
+   delta (`MODIFIED` or `ADDED`), not as an assumption of this spec. Only behavior this
+   feature adds or changes in the target needs a delta. Do not add delta items that restate
+   what the target's unchanged text already guarantees (e.g. "MUST NOT show the priority"
+   when the target already fixes the line format), or that pin incidental text the target
+   never specified, such as usage or help text, unless the feature is about it. Use what the
+   living specs already state as settled context: do not mark `[NEEDS CLARIFICATION]` on
+   anything they answer.
 3. **Write the `## Changes to Living Specs` section** following the format and rules in the spec
-   template's section of that name. It is mandatory: when no living spec is affected, it holds
+   template's section of that name. Each `ADDED` item starts with its target section in
+   parentheses: `- (Functional Requirements) System MUST …`, `- (Edge Cases) What happens when
+   …?`. It is mandatory: when no living spec is affected, it holds
    only `None: no living spec's behavior changes.` In a non-interactive run, when it is unclear
    whether a spec is affected, record the delta and end its `Why` with `(unsure: <reason>)`.
 4. **Features that mostly change existing behavior** still get a valid spec: keep the mandatory
@@ -32,7 +42,14 @@ Follow the specify instructions below with these additions. Where they conflict,
    - Every affected living spec has a delta subsection, and every target is `Living`.
    - Every `Was` quotes the target's current text exactly.
    - Every `Now` and `ADDED` item is a complete, testable statement.
-   - No behavior appears both in this spec's own sections and in a delta.
+   - Rules that can apply to the same input (validation, defaults, precedence), in deltas and in
+     the target's unchanged requirements, agree on the outcome when an input triggers several of
+     them at once.
+   - No behavior appears both in this spec's own sections and in a delta, and no detail of a
+     target's behavior (input forms, defaults, matching, messages) appears only in this spec's
+     own sections, including Assumptions.
+   - No delta item restates unchanged target behavior or pins text the target never specified
+     (usage or help text).
 6. **Never edit another spec.** Deltas are applied only by
    `__SPECKIT_COMMAND_LIVING_ARCHIVE__`.
 7. **When updating an existing spec**, refresh the deltas section too.
