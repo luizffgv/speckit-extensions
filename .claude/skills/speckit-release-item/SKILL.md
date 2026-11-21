@@ -8,7 +8,8 @@ when_to_use: After changing an already-released extension, preset, workflow or s
 
 Releases happen automatically: when a commit on `main` lists a version in a
 `catalog.json` that has no tag yet, CI creates a GitHub release tagged
-`<kind>-<id>-v<version>` (with a zip for extensions and presets). This skill only gets the
+`<kind>-<id>-v<version>` (with a zip for extensions and presets), marked as a
+pre-release for `0.x` and `-suffix` versions. This skill only gets the
 change ready to merge. Never create tags or releases by hand, and don't push
 unless the user asks.
 

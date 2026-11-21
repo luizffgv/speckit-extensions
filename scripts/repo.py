@@ -574,6 +574,25 @@ def cmd_catalog(args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------------------
 
 
+def is_prerelease(version: str) -> bool:
+    """0.x versions and versions with a pre-release suffix (1.0.0-rc.1) aren't stable yet."""
+    return version.startswith("0.") or "-" in version.split("+", 1)[0]
+
+
+def draft_release_ids() -> dict[str, list[str]]:
+    """Draft releases by tag name (drafts are listed only to users who can push)."""
+    out = subprocess.run(
+        ["gh", "api", "--paginate", "repos/{owner}/{repo}/releases",
+         "--jq", '.[] | select(.draft) | "\\(.tag_name) \\(.id)"'],
+        cwd=ROOT, text=True, capture_output=True, check=True,
+    ).stdout
+    drafts: dict[str, list[str]] = {}
+    for line in out.splitlines():
+        tag, _, release_id = line.rpartition(" ")
+        drafts.setdefault(tag, []).append(release_id)
+    return drafts
+
+
 def cmd_release(args: argparse.Namespace) -> int:
     if not in_git():
         raise RepoError("release must run inside the git repository")
@@ -582,11 +601,21 @@ def cmd_release(args: argparse.Namespace) -> int:
     if not pending:
         print("nothing to release")
         return 0
+    drafts = draft_release_ids()
     with tempfile.TemporaryDirectory() as tmp:
         for item in pending:
-            title = f"{item.meta.get('name', item.id)} {item.version} ({item.kind})"
+            # A failed asset upload or publish leaves a draft without a tag; drop it so the
+            # retry starts clean instead of piling up drafts.
+            for draft_id in drafts.get(item.tag, []):
+                delete = ["gh", "api", "-X", "DELETE", f"repos/{{owner}}/{{repo}}/releases/{draft_id}"]
+                print(("would run: " if args.dry_run else "") + " ".join(delete))
+                if not args.dry_run:
+                    subprocess.run(delete, cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
+            title =f"{item.meta.get('name', item.id)} {item.version} ({item.kind})"
             notes = f"{item.kind.capitalize()} `{item.id}` version {item.version}.\n\nSee {item.rel}/CHANGELOG.md."
             cmd = ["gh", "release", "create", item.tag, "--target", head, "--title", title, "--notes", notes]
+            if is_prerelease(item.version):
+                cmd.append("--prerelease")
             if item.kind in ZIPPED_KINDS:
                 asset = Path(tmp) / zip_name(item)
                 asset.write_bytes(build_zip(item))

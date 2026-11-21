@@ -157,6 +157,8 @@ Versions are released by merging to `main`; there is no manual tagging.
 3. Merge to `main`. CI validates, then `repo.py release` creates a GitHub release
    tagged `<kind>-<id>-v<version>` (for example `extension-my-ext-v1.2.0`) for every
    version without a tag. Extension and preset releases include the `<id>-<version>.zip` asset.
+   Versions `0.x` and versions with a pre-release suffix (`1.0.0-rc.1`) are marked as
+   pre-releases.
 
 Catalog entries point at those tags, so an installed version never changes after
 release. Checksums are computed from the source. Extension and preset zips are built
