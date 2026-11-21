@@ -14,10 +14,10 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0 # tags are needed to detect edits to released versions
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.4.0
       - name: Validate extensions, workflows and steps
         run: uv run scripts/repo.py validate
       - name: Check catalogs are up to date
@@ -32,10 +32,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.4.0
       - name: Publish releases for new versions
         run: uv run scripts/repo.py release
         env:
