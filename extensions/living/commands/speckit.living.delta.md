@@ -139,7 +139,10 @@ Report:
 - Requirements moved out of the current spec into deltas.
 - Non-living specs the feature would change (no delta recorded), if any.
 - Next step: review the deltas with the spec, then `__SPECKIT_COMMAND_PLAN__`. Planning and tasks
-  must cover the code changes the deltas describe.
+  must cover the code changes the deltas describe. If the feature was already implemented,
+  recommend `__SPECKIT_COMMAND_LIVING_ARCHIVE__` (which merges the deltas) instead of planning. It
+  was if its spec is `Living`, or if `tasks.md` exists and
+  `grep -c '^\s*- \[ \]' FEATURE_DIR/tasks.md` prints 0; run that command, don't guess.
 
 ## Guardrails
 

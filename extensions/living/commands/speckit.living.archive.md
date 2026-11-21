@@ -1,19 +1,24 @@
 ---
-description: "Archive a delivered feature's derived artifacts (plan.md, tasks.md, checklists/) after moving their durable rationale into research.md, merge its deltas into other living specs, and mark its spec Living"
+description: "Archive a delivered feature's derived artifacts (plan.md, tasks.md, checklists/, data-model.md, contracts/, quickstart.md) after moving their durable rationale into research.md, merge its deltas into other living specs, and mark its spec Living"
 ---
 
 # Archive Derived Artifacts
 
 This command supports **spec-anchored living specs**: `spec.md` is the contract for a feature's
-current behavior, and `plan.md`, `tasks.md` and `checklists/` are derivations that describe how it
-was built. Once the feature is delivered they go stale and mislead later readers, so this command
+current behavior, and `plan.md`, `tasks.md`, `checklists/`, `data-model.md`, `contracts/` and
+`quickstart.md` are derivations that describe how it was built. Later features update only
+`spec.md` (through deltas), never these. Once the feature is delivered they go stale and mislead later readers, so this command
 removes them, after keeping whatever is worth keeping. If the feature changed other living specs,
 its `spec.md` records those changes as deltas (`__SPECKIT_COMMAND_LIVING_DELTA__`), and this
 command merges them into those specs.
 
-Run it as the **last commit of a feature's PR**, after reviews and once implementation is complete
-(`__SPECKIT_COMMAND_IMPLEMENT__` finished, and any verification command you use reports no
-remaining work). Git history keeps every archived file.
+It requires the implementation to be complete: step 1 stops unless every task is done or
+waived. We recommend running it as the **last commit of a feature's PR**, after reviews, so the
+PR still shows the plan and tasks while it is reviewed. Git history keeps every archived file.
+
+It works on features created before this extension was installed: it needs only the core
+artifacts, and a spec without a `## Changes to Living Specs` section simply has no deltas to
+merge.
 
 ## User Input
 
@@ -27,9 +32,7 @@ Accepted input:
 
 - A feature directory (`specs/002-config-cleanup`), its name, or its number (`002`).
 - `--keep <list>`: comma-separated artifacts to keep even though they are archivable
-  (`plan`, `tasks`, `checklists`).
-- `--also <list>`: comma-separated artifacts kept by default that should also be archived
-  (`quickstart`, `contracts`, `data-model`). Use only when they hold nothing durable.
+  (`plan`, `tasks`, `checklists`, `data-model`, `contracts`, `quickstart`).
 - `--dry-run`: report what would happen, change nothing.
 - **Nothing**: fall back to context (see below).
 
@@ -54,7 +57,7 @@ Accepted input:
 - If the YAML cannot be parsed or is invalid, do not skip silently: tell the user that `.specify/extensions.yml` could not be read (include the parser error) and that no hooks were checked, including any mandatory (`optional: false`) hooks registered there, then continue normally.
 - Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
 - Do not interpret hook `condition` expressions: a hook with no or an empty `condition` is executable; a hook with a non-empty `condition` is skipped and left to the HookExecutor.
-- For each executable hook:
+- For each executable hook:  
   - **Optional** (`optional: true`): output
     ```
     ## Extension Hooks
@@ -81,13 +84,26 @@ Accepted input:
 
 - `FEATURE_DIR/spec.md` exists. If its `**Status**` is `Retired` (the feature itself was removed
   from the product), stop: there is nothing to archive.
-- At least one archivable artifact (`plan.md`, `tasks.md`, `checklists/`) exists. If none does,
-  report that the feature is already archived and only check the spec header (step 7).
+- At least one archivable artifact (`plan.md`, `tasks.md`, `checklists/`, `data-model.md`,
+  `contracts/`, `quickstart.md`) exists. If none does, the feature is already archived (or never
+  had them): skip steps 1–3, 5 and 6, but still merge any deltas (step 4) and update the header
+  (step 7).
 - The files under `FEATURE_DIR` have no uncommitted changes (`git status --porcelain -- FEATURE_DIR`).
   If they do, stop and ask the user to commit or discard them first, so the deletion is a clean,
   reviewable diff.
 - If `FEATURE_DIR/spec.md` has a `## Changes to Living Specs` section with deltas, every target it
   names exists, has `**Status**: Living`, and has no uncommitted changes. If not, stop and explain.
+  A target delivered before this extension was installed is not `Living` yet: recommend archiving
+  it first (`__SPECKIT_COMMAND_LIVING_ARCHIVE__ <target>`), which marks it `Living`.
+- If `FEATURE_DIR/spec.md` has **no** `## Changes to Living Specs` section (for example, it was
+  written before this extension was installed) and other specs are `Living`, the feature may have
+  changed their behavior without recording it. Compare this feature's spec (and, if they are
+  quick to check, its tasks and the code it changed) with the `Living` specs. If anything this
+  feature specifies or changed contradicts or changes what a `Living` spec states, stop: name the
+  spec and the statement, and recommend `__SPECKIT_COMMAND_LIVING_DELTA__` first. Archiving now
+  would leave that spec stale. If you find nothing, ask the user to confirm the feature changed no
+  other living spec (in a non-interactive run, continue and say in the Completion Report that you
+  checked and found none).
 
 ## Execution
 
@@ -108,18 +124,21 @@ the user confirms each is resolved or waived (waivers again go only to the PR no
 
 ### 2. Collect durable rationale
 
-Read `plan.md`, `tasks.md` and `checklists/`, and pick out content that is still true and that a
-future change would need, and that is not already in `spec.md`, `research.md`, `data-model.md`,
-`contracts/` or the code's own docs (README, package docs):
+Read every artifact being archived, and pick out content that is still true and that a future
+change would need, and that is not already in `spec.md`, `research.md` or the code and its own docs
+(README, package docs, schemas, API docs):
 
 - **Complexity Tracking** entries from `plan.md`: every justified constitution deviation that is
   still in the code. These MUST be kept, so the justification stays on record.
 - Architectural or technology decisions and their reasons (Technical Context, Summary, structure
   decisions) not already in `research.md`.
+- From `data-model.md` and `contracts/`: the reasons behind data and interface choices and any
+  compatibility constraints still in force (e.g. how stored data from older versions is read),
+  not the shapes or signatures themselves, which the code shows.
 - Known limitations or deferred follow-ups that are still open and tracked nowhere else.
 
 Do **not** keep: task lists, progress, phase plans, dates of work, waivers, checklist scaffolding,
-anything superseded by later changes, or anything the code or its README already says.
+copies of schemas, interfaces or setup steps, anything superseded by later changes, or anything the code or its README already says.
 
 Content that describes *intended behavior* (a requirement, an edge case, an assumption about
 behavior) belongs in `spec.md` (or, for behavior another living spec owns, in a delta), not
@@ -131,9 +150,9 @@ The same holds for behavior a delta target owns that this feature's `spec.md` st
 own sections (often Assumptions or Edge Cases) and not in that target's delta: accepted values,
 defaults, validation rules and their order, user-visible messages. Once the deltas are merged, the
 target would not state its own behavior. Treat it as spec drift too: stop and recommend moving it
-into the delta. (Interface syntax and data shapes may stay in this feature's `contracts/` and
-`data-model.md`, which are kept, and incidental text the target never specified, such as usage
-text, needs no delta.)
+into the delta. (Interface syntax and data shapes need no delta: once `contracts/` and
+`data-model.md` are archived, the code is their reference. Incidental text the target never
+specified, such as usage text, needs no delta either.)
 
 ### 3. Write the rationale into `research.md`
 
@@ -186,8 +205,7 @@ Then, unless `--dry-run`, apply each target's delta to its `spec.md`:
 
 Finally, remove the `## Changes to Living Specs` section from `FEATURE_DIR/spec.md`; step 7
 records which specs were updated. Then find every mention of that section or its deltas in the
-files kept in `FEATURE_DIR` (`spec.md`, `research.md`, `data-model.md`, `contracts/`,
-`quickstart.md`), e.g. with `grep -rniE 'delta|changes to living specs|Δ' FEATURE_DIR`, and rewrite
+files kept in `FEATURE_DIR` (`spec.md`, `research.md`, and anything kept with `--keep`), e.g. with `grep -rniE 'delta|changes to living specs|Δ' FEATURE_DIR`, and rewrite
 each to name the target spec instead ("specified in the deltas below" → "specified in
 `specs/001-user-auth`"; "the 001 delta's edge case" → "the edge case in `specs/001-user-auth`").
 Repeat the search until it finds none. Report every edit.
@@ -196,8 +214,9 @@ Repeat the search until it finds none. Report every edit.
 
 Search the whole repository (excluding `node_modules/`, `.git/` and `FEATURE_DIR` itself) for links
 or mentions of each file to be deleted, e.g. `<feature-name>/plan.md`, `<feature-name>/tasks.md`,
-`<feature-name>/checklists/`. For each hit, either rewrite it to point at `spec.md` / `research.md`
-or drop the mention. Report every edit. Do the same for any `--also` artifacts.
+`<feature-name>/checklists/`, `<feature-name>/contracts/`. For each hit, either rewrite it to point
+at `spec.md` / `research.md` (or the code that now documents the interface) or drop the mention.
+Report every edit.
 
 ### 6. Delete the archived artifacts
 
@@ -208,13 +227,13 @@ Unless `--dry-run`, delete (with `git rm`) the artifacts being archived. By defa
 | `plan.md` | archive | derived build plan |
 | `tasks.md` | archive | derived task list |
 | `checklists/` | archive | derived validation scaffolding |
+| `data-model.md` | archive | derived design; the code is the reference |
+| `contracts/` | archive | derived interface design; the code is the reference |
+| `quickstart.md` | archive | derived verification steps |
 | `spec.md` | **keep** | the living contract |
 | `research.md` | **keep** | durable rationale |
-| `data-model.md` | keep | may be archived with `--also` |
-| `contracts/` | keep | often linked from docs; may be archived with `--also` |
-| `quickstart.md` | keep | verification steps; may be archived with `--also` |
 
-Apply `--keep` and `--also`. Never delete `spec.md` or `research.md`.
+Apply `--keep`. Never delete `spec.md` or `research.md`.
 
 ### 7. Update the spec header
 
@@ -225,7 +244,7 @@ In `FEATURE_DIR/spec.md`:
 - Add or update, right after `**Last Updated**`:
 
   ```markdown
-  **Archived artifacts**: plan.md, tasks.md, checklists/ (recover with
+  **Archived artifacts**: plan.md, tasks.md, checklists/, contracts/ (recover with
   `git log --diff-filter=D --name-only -- <FEATURE_DIR>`)
   ```
 
@@ -259,7 +278,7 @@ Report:
 
   ```markdown
   ### Archived derived artifacts (<feature>)
-  - Archived: plan.md, tasks.md, checklists/
+  - Archived: <artifacts archived>
   - Living specs updated: <target — one-line summary of its changes>, or "none"
   - Rationale kept in research.md: <one line, or "none needed">
   - Waived tasks: <ID — summary — waived by/why — what stays unverified>, or "none"

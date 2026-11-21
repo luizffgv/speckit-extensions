@@ -2,7 +2,7 @@ schema_version: "1.0"
 workflow:
   id: "living-speckit"
   name: "Full SDD Cycle with Living Archive"
-  version: "0.1.0"
+  version: "0.1.1"
   author: "luizffgv"
   description: "Runs specify (with living-spec deltas) → plan → tasks → analyze and fix → implement with review gates, then archives and merges the deltas"
 
@@ -146,7 +146,7 @@ steps:
     steps:
       - id: review-implementation
         type: gate
-        message: "Review the implementation, then commit everything (code, tests and the feature directory) before approving: archiving deletes plan.md, tasks.md and checklists/ and refuses to run on uncommitted work. If anything is still uncommitted when you approve, this gate comes back. Reject to stop here and archive later."
+        message: "Review the implementation, then commit everything (code, tests and the feature directory) before approving: archiving deletes plan.md, tasks.md, checklists/, data-model.md, contracts/ and quickstart.md and refuses to run on uncommitted work. If anything is still uncommitted when you approve, this gate comes back. Reject to stop here and archive later."
         options: [approve, reject]
         on_reject: abort
 

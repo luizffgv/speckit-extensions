@@ -68,7 +68,8 @@ specify workflow run living-speckit -i spec="Describe what to build"
    running `speckit.living.archive` yourself.
 7. `speckit.living.archive`: moves durable rationale into `research.md`, merges the deltas into
    the existing living specs (stopping if one changed since its delta was written), deletes
-   `plan.md`, `tasks.md` and `checklists/` with `git rm`, and marks `spec.md` `Living`. It doesn't
+   the derived artifacts (`plan.md`, `tasks.md`, `checklists/`, `data-model.md`, `contracts/`,
+   `quickstart.md`) with `git rm`, and marks `spec.md` `Living`. It doesn't
    commit; changes to the other specs are left in the working tree with the rest. A final gate
    shows its report (PR notes, suggested commit message). If archive stopped without archiving,
    that gate shows why and the run ends as aborted, not completed.

@@ -52,7 +52,8 @@ Expected:
   - ADDED items get the next free ID, e.g. 001's `FR-008`.
   - Both targets get `**Last changed by**: specs/003-…`.
   - 003 is `Living` with `**Updated living specs**`, and has no deltas section.
-  - `plan.md`, `tasks.md` and `checklists/` are deleted.
+  - `plan.md`, `tasks.md`, `checklists/`, `data-model.md`, `contracts/` and `quickstart.md` are
+    deleted; `spec.md` and `research.md` remain.
 
 ### B. No living spec changed
 
@@ -74,6 +75,45 @@ changing anything, names the `Was` mismatch, and recommends `/speckit-living-del
 Run `/speckit-specify` with scenario A's prompt, then `/speckit-clarify`. Expected:
 - It asks nothing that 001 or 002 already answer, such as the title limit or the empty-list message.
 - An answer that changes listing goes into 002's delta, not into 003's own requirements.
+
+### E. Adopting the extension in an existing codebase
+
+```bash
+tests/living/setup.sh --legacy
+```
+
+This sets up the same project as it was before the extension was installed: 001 and 002 are
+`Draft` specs that were never archived. 001 still has `plan.md` (with a Complexity Tracking
+entry), `tasks.md`, `checklists/`, `data-model.md`, `contracts/` and `quickstart.md`, all done;
+002 has only its spec. A third feature, `003-friendly-empty-list`, was delivered with the core
+commands: it changed the empty-list message, which 002 owns, without recording a delta.
+
+Run `/speckit-living-archive specs/001-add-task`, commit, then `/speckit-living-archive
+specs/002-list-tasks`. Expected:
+- 001:
+  - all six derived artifacts are deleted, leaving `spec.md` and `research.md`;
+  - the Complexity Tracking entry and the reason for storing `next_id` (from `data-model.md`)
+    move into `research.md`;
+  - the spec is `Living` with an `**Archived artifacts**` line.
+- 002: archive reports nothing to delete and only marks the spec `Living`. 001 is now
+  `Living` and 002 has no deltas section, so archive asks whether 002 changed 001; unattended,
+  it flags this in the report.
+
+### F. A feature from before the extension, with an unrecorded change
+
+Continue from E (both 001 and 002 `Living`).
+
+1. Run `/speckit-living-archive specs/003-friendly-empty-list`. Expected: archive stops before
+   changing anything, names 002's `FR-003` (003 changed the empty-list message 002 owns), and
+   recommends `/speckit-living-delta`.
+2. Instead, run `/speckit-living-delta specs/003-friendly-empty-list` first, commit, then
+   archive. Expected:
+   - the delta modifies 002's `FR-003` and its empty-list acceptance scenario;
+   - after archive, 002 states the new message and has `**Last changed by**:
+     specs/003-friendly-empty-list`;
+   - 003 is `Living` with `**Updated living specs**: specs/002-list-tasks`.
+3. Recovery: if 003 was archived without deltas (for example by hand), running
+   `/speckit-living-delta` and then archive again still merges the deltas into 002.
 
 ## Unattended runs
 

@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: living
   name: "Living Specs"
-  version: "0.1.0"
+  version: "0.2.0"
   description: "Keep specs living: record a feature's changes to other living specs, then archive its derived artifacts and merge those changes"
   author: luizffgv
   repository: https://github.com/luizffgv/speckit-extensions
@@ -22,7 +22,7 @@ provides:
       description: "Record how a new feature changes existing living specs, as deltas in its spec.md that archive later merges into those specs"
     - name: speckit.living.archive
       file: commands/speckit.living.archive.md
-      description: "Archive a delivered feature's derived artifacts (plan.md, tasks.md, checklists/) after moving their durable rationale into research.md, merge its deltas into other living specs, and mark its spec Living"
+      description: "Archive a delivered feature's derived artifacts (plan.md, tasks.md, checklists/, data-model.md, contracts/, quickstart.md) after moving their durable rationale into research.md, merge its deltas into other living specs, and mark its spec Living"
 
 hooks:
   after_clarify:

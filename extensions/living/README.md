@@ -1,8 +1,9 @@
 # Living Specs
 
 For projects that keep **spec-anchored living specs**: once a feature is delivered, its
-`spec.md` stays as the contract for current behavior, while `plan.md`, `tasks.md` and
-`checklists/` describe how it was built and go stale.
+`spec.md` stays as the contract for current behavior, while `plan.md`, `tasks.md`,
+`checklists/`, `data-model.md`, `contracts/` and `quickstart.md` describe how it was built and go
+stale.
 
 - `speckit.living.delta` records how a new feature changes existing living specs, as deltas in
   the new feature's `spec.md`. With the companion [`living` preset](../../presets/living/),
@@ -26,13 +27,15 @@ specify extension add living
 | Command | Description |
 | --- | --- |
 | `speckit.living.delta` | Finds the `Living` specs the current feature changes, moves any of their behavior out of the new spec, and writes a `## Changes to Living Specs` section with `MODIFIED`/`ADDED`/`REMOVED` items per target. `MODIFIED` and `REMOVED` quote the target's current text (`Was`). Never edits the targets. Re-run it after the spec changes. |
-| `speckit.living.archive` | Checks every task is done or waived, moves still-true rationale (Complexity Tracking, decisions) from `plan.md` into `research.md`, merges deltas into their target specs, fixes links to the archived files, deletes them with `git rm`, marks `spec.md` `Living`, and prints PR notes. |
+| `speckit.living.archive` | Checks every task is done or waived, moves still-true rationale (Complexity Tracking, decisions) from the derived artifacts into `research.md`, merges deltas into their target specs, fixes links to the archived files, deletes them with `git rm`, marks `spec.md` `Living`, and prints PR notes. |
 
-Archive arguments: a feature directory, name or number; `--keep plan,tasks,checklists` to keep
-some; `--also quickstart,contracts,data-model` to archive more; `--dry-run`.
+Archive arguments: a feature directory, name or number; `--keep` with a comma-separated list
+(`plan`, `tasks`, `checklists`, `data-model`, `contracts`, `quickstart`) to keep some; `--dry-run`.
+It always keeps `spec.md` and `research.md`.
 
 Waived tasks are reported only in the PR notes it prints, never written into the repository.
-It never commits.
+Archive stages its deletions (`git rm`) and leaves its edits in the working tree, but never
+commits: review the result and commit it yourself.
 
 The name follows OpenSpec's `archive`. Unlike OpenSpec, nothing is moved to an archive folder:
 the files are deleted, and git history keeps them (the spec header records how to recover them).
@@ -74,9 +77,32 @@ analyze cover them (without it, tasks may generate nothing for the deltas).
 extension registers it as an optional `after_clarify` hook, so the agent offers it after
 `/speckit.clarify`. Without the preset, run it after `/speckit.specify`, before planning.
 
-`speckit.living.archive` as the last commit of a feature's PR, after reviews and once
-implementation is complete. A later change to the feature regenerates `plan.md` and `tasks.md`
+`speckit.living.archive` once implementation is complete (it stops if any task is neither done
+nor waived). We recommend running it as the last commit of a feature's PR, after reviews, so
+reviewers still see the plan and tasks. A later change to the feature regenerates `plan.md` and `tasks.md`
 from `spec.md` (`/speckit.plan`, `/speckit.tasks`) before implementing.
+
+## Adopting it in an existing project
+
+Specs written before the extension was installed don't have `**Status**: Living`, so the delta
+command, the preset and archive treat them as ordinary specs: they are never delta targets. To
+make a delivered feature a living spec, run `speckit.living.archive` on it. If its derived
+artifacts are already gone, archive only updates the header.
+
+A feature that was in progress when you installed the extension can be archived as usual. Its
+spec has no deltas, so if it changed behavior another living spec owns, run
+`speckit.living.delta` before archiving, or that spec won't be updated. When the deltas section
+is missing, archive compares the feature with the living specs and stops if it changed one.
+If a feature was archived before its deltas were recorded, run `speckit.living.delta` on it and
+archive it again: archive still merges deltas when there is nothing left to delete.
+
+## What stays current
+
+Only `spec.md` is kept current: later features change it through deltas. Everything else that
+describes the design (`plan.md`, `data-model.md`, `contracts/`, `quickstart.md`) would go stale,
+so archive deletes it after moving still-true reasons into `research.md`; the code is the
+reference for interfaces and data. `research.md` records why decisions were made when the feature
+shipped, so read it as history rather than as current behavior.
 
 ## Hooks
 
