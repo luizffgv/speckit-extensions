@@ -4,8 +4,8 @@
 #
 # Usage: tests/living/setup.sh [--legacy] [DEST]   (DEST must not exist; default: a new temp dir)
 #
-# --legacy: a codebase from before the extension was installed. 001 and 002 are Draft specs that
-# were never archived (001 still has plan, tasks, checklists, data model, contracts and
+# --legacy: a codebase from before the extension was installed. There is no specs/living/; 001 and
+# 002 are Draft specs (001 still has plan, tasks, checklists, data model, contracts and
 # quickstart; 002 has only its spec), and 003-friendly-empty-list was delivered with the core
 # commands, so it changed 002's empty-list message without recording a delta.
 set -euo pipefail
@@ -42,11 +42,7 @@ cp -a "$here/fixture/." "$dest/"
 printf 'tasks.json\n__pycache__/\n.specify/workflows/driver/\n' >> .gitignore
 
 if [[ $legacy -eq 1 ]]; then
-  for spec in specs/001-add-task/spec.md specs/002-list-tasks/spec.md; do
-    # Draft status, no archive line: the core template's header.
-    sed -i -e 's/^\*\*Status\*\*: Living$/**Status**: Draft/' \
-      -e '/^\*\*Archived artifacts\*\*/,/^$/d' "$spec"
-  done
+  rm -rf specs
   cp -a "$here/legacy/." "$dest/"
   hint='No tasks yet. Add one with: todo.py add <title>'
   sed -i "s/print(\"No tasks.\")/print(\"$hint\")/" todo.py

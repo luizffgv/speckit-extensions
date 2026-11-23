@@ -1,20 +1,20 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-11-21T23:40:11Z",
+  "updated_at": "2026-11-22T23:25:09Z",
   "catalog_url": "https://raw.githubusercontent.com/luizffgv/speckit-extensions/main/extensions/catalog.json",
   "extensions": {
     "living": {
       "id": "living",
       "name": "Living Specs",
-      "description": "Keep specs living: record a feature's changes to other living specs, then archive its derived artifacts and merge those changes",
+      "description": "Keep living specs in specs/living, one per capability: record which living specs a feature creates, updates and retires, then sync them once it ships, keeping feature directories as history",
       "author": "luizffgv",
-      "version": "0.2.0",
-      "download_url": "https://github.com/luizffgv/speckit-extensions/releases/download/extension-living-v0.2.0/living-0.2.0.zip",
-      "sha256": "775c736c837eb8846883dabc0704b834eafd90dfeb3d8bd1cd9e1fdbab7d6b1c",
+      "version": "0.3.0",
+      "download_url": "https://github.com/luizffgv/speckit-extensions/releases/download/extension-living-v0.3.0/living-0.3.0.zip",
+      "sha256": "5201619987dac2bd534de1b245e2d6c3855dc215333813f00a587a2b41d7a3a2",
       "repository": "https://github.com/luizffgv/speckit-extensions",
-      "documentation": "https://github.com/luizffgv/speckit-extensions/blob/extension-living-v0.2.0/extensions/living/README.md",
-      "changelog": "https://github.com/luizffgv/speckit-extensions/blob/extension-living-v0.2.0/extensions/living/CHANGELOG.md",
-      "homepage": "https://github.com/luizffgv/speckit-extensions/blob/extension-living-v0.2.0/extensions/living",
+      "documentation": "https://github.com/luizffgv/speckit-extensions/blob/extension-living-v0.3.0/extensions/living/README.md",
+      "changelog": "https://github.com/luizffgv/speckit-extensions/blob/extension-living-v0.3.0/extensions/living/CHANGELOG.md",
+      "homepage": "https://github.com/luizffgv/speckit-extensions/blob/extension-living-v0.3.0/extensions/living",
       "license": "Unlicense",
       "requires": {
         "speckit_version": ">=1.3.0",
@@ -32,11 +32,11 @@
       "tags": [
         "living-spec",
         "retention",
-        "archive",
+        "sync",
         "delta"
       ],
       "created_at": "2026-11-16T10:05:28Z",
-      "updated_at": "2026-11-21T23:40:11Z"
+      "updated_at": "2026-11-22T23:25:09Z"
     }
   }
 }

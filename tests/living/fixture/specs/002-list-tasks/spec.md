@@ -1,15 +1,17 @@
 # Feature Specification: List Tasks
 
+> **History.** This directory records how this feature was specified and built. For current
+> behavior read the living specs under **Living specs** below; read this only for why things changed.
+
 **Feature Branch**: `002-list-tasks`
 
 **Created**: 2026-09-10
 
-**Status**: Living
+**Status**: Synced
 
-**Last Updated**: 2026-09-15
+**Synced**: 2026-09-15
 
-**Archived artifacts**: plan.md, tasks.md, checklists/ (recover with
-`git log --diff-filter=D --name-only -- specs/002-list-tasks`)
+**Living specs**: created specs/living/list-tasks
 
 **Input**: User description: "Show me my tasks"
 

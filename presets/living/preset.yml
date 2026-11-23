@@ -3,8 +3,8 @@ schema_version: "1.0"
 preset:
   id: "living"
   name: "Living Specs"
-  version: "0.1.0"
-  description: "Makes specify write the new living spec and its deltas to existing living specs in one step, and clarify, plan, tasks and analyze handle those deltas"
+  version: "0.2.0"
+  description: "Makes specify name the living specs a feature creates and write its deltas to existing ones in one step, and makes every core command read specs/living for current behavior and feature directories only as history"
   author: "luizffgv"
   repository: "https://github.com/luizffgv/speckit-extensions"
   license: "Unlicense"
@@ -12,44 +12,50 @@ preset:
 requires:
   speckit_version: ">=1.3.0"
   extensions:
-    - "living"   # speckit.living.archive applies the deltas; speckit.living.delta re-runs them
+    - "living"   # speckit.living.sync applies the section; speckit.living.delta refreshes it
 
 provides:
   templates:
     - type: "command"
       name: "speckit.specify"
       file: "commands/speckit.specify.md"
-      description: "Read existing living specs first, specify only the new capability, and record changes to living specs as deltas"
+      description: "Read the living specs first, specify and name only the new capability, and record changes to existing living specs as deltas"
       strategy: "wrap"
 
     - type: "command"
       name: "speckit.clarify"
       file: "commands/speckit.clarify.md"
-      description: "Don't ask what living specs already answer; record answers that change them as deltas"
+      description: "Don't ask what living specs already answer; record answers that change them as deltas, and clarify names"
       strategy: "wrap"
 
     - type: "command"
       name: "speckit.plan"
       file: "commands/speckit.plan.md"
-      description: "Read the delta targets and design the changes to them along with the new capability"
+      description: "Read the delta targets in specs/living, use history only for rationale, and design the changes along with the new capability"
       strategy: "wrap"
 
     - type: "command"
       name: "speckit.tasks"
       file: "commands/speckit.tasks.md"
-      description: "Generate tasks for every delta item, referencing it by key"
+      description: "Generate tasks for every delta item and retirement, referencing it by key"
       strategy: "wrap"
 
     - type: "command"
       name: "speckit.analyze"
       file: "commands/speckit.analyze.md"
-      description: "Check delta coverage, stale Was text and conflicts, keeping delta IDs apart from the spec's own"
+      description: "Check delta coverage, stale Was text, names and conflicts, keeping delta IDs apart from the spec's own"
+      strategy: "wrap"
+
+    - type: "command"
+      name: "speckit.implement"
+      file: "commands/speckit.implement.md"
+      description: "Read the touched living specs, keep the others true, and leave specs/living to sync"
       strategy: "wrap"
 
     - type: "template"
       name: "spec-template"
       file: "templates/spec-template.md"
-      description: "Adds the Changes to Living Specs section"
+      description: "Adds the Changes to Living Specs section (CREATE, UPDATE, RETIRE)"
       strategy: "append"
 
 tags:
@@ -58,3 +64,4 @@ tags:
   - "specify"
   - "tasks"
   - "analyze"
+  - "implement"

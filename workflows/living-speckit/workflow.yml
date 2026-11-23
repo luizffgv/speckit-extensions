@@ -1,15 +1,16 @@
 schema_version: "1.0"
 workflow:
   id: "living-speckit"
-  name: "Full SDD Cycle with Living Archive"
-  version: "0.1.1"
+  name: "Full SDD Cycle with Living Specs"
+  version: "0.2.0"
   author: "luizffgv"
-  description: "Runs specify (with living-spec deltas) → plan → tasks → analyze and fix → implement with review gates, then archives and merges the deltas"
+  description: "Runs specify (naming new living specs and recording deltas) → plan → tasks → analyze and fix → implement with review gates, then syncs specs/living"
 
 # Spec Kit's bundled "speckit" workflow (Full SDD Cycle 1.0.1) plus an
-# analyze-and-fix loop and speckit.living.archive. Needs the "living" extension
-# and the "living" preset, which makes speckit.specify also write deltas to
-# existing living specs and plan, tasks and analyze cover them.
+# analyze-and-fix loop and speckit.living.sync. Needs the "living" extension
+# (0.3.0+) and the "living" preset (0.2.0+), which makes speckit.specify also
+# name the living specs a feature creates and record deltas to existing ones,
+# and makes the other commands read specs/living for current behavior.
 requires:
   speckit_version: ">=1.3.0"
 
@@ -32,7 +33,7 @@ steps:
 
   - id: review-spec
     type: gate
-    message: "Review the generated spec before planning, including its Changes to Living Specs section (deltas to existing living specs; check any marked unsure)."
+    message: "Review the generated spec before planning, including its Changes to Living Specs section: the names of the living specs it creates, its deltas to existing ones (check any marked unsure) and any retirements."
     options: [approve, reject]
     on_reject: abort
 
@@ -87,12 +88,13 @@ steps:
               conservative option and note it under the spec's Assumptions. A fix that changes
               behavior another living spec owns goes in the spec's `## Changes to Living Specs`
               section (same format as its existing entries), never in this spec's own
-              requirements. Keep each rule in exactly one place: when you move a rule into a
+              requirements, and quotes `Was` text from `specs/living/`, never from another
+              feature directory. Keep each rule in exactly one place: when you move a rule into a
               delta, delete it from this spec's own sections (Assumptions and Edge Cases too)
               rather than restating it, and when tasks or tests disagree with the spec, change
               the tasks to match the spec. When you change a task that is already checked
               (`- [X]`), uncheck it so implement does it again. Do not edit other specs, and do
-              not implement any code.
+              not edit `specs/living/` or `specs/retired/`, and do not implement any code.
 
               Analysis report:
 
@@ -137,7 +139,7 @@ steps:
     input:
       args: "{{ inputs.spec }}"
 
-  # Archive refuses to run on uncommitted work, so the review gate repeats until
+  # Sync refuses to run on uncommitted work, so the review gate repeats until
   # everything except this run's own state is committed (up to 5 times).
   - id: implementation-review
     type: do-while
@@ -146,7 +148,7 @@ steps:
     steps:
       - id: review-implementation
         type: gate
-        message: "Review the implementation, then commit everything (code, tests and the feature directory) before approving: archiving deletes plan.md, tasks.md, checklists/, data-model.md, contracts/ and quickstart.md and refuses to run on uncommitted work. If anything is still uncommitted when you approve, this gate comes back. Reject to stop here and archive later."
+        message: "Review the implementation, then commit everything (code, tests and the feature directory) before approving: syncing the living specs refuses to run on uncommitted work, so its changes stay a separate, reviewable diff. If anything is still uncommitted when you approve, this gate comes back. Reject to stop here and sync later."
         options: [approve, reject]
         on_reject: abort
 
@@ -170,42 +172,42 @@ steps:
     then:
       - id: still-uncommitted
         type: gate
-        message: "These files are still uncommitted after 5 reviews (git status below). The run stops here: commit them, then run speckit.living.archive yourself."
+        message: "These files are still uncommitted after 5 reviews (git status below). The run stops here: commit them, then run speckit.living.sync yourself."
         show_file: ".specify/workflows/runs/{{ context.run_id }}/uncommitted.txt"
         options: [abort]
         on_reject: abort
 
-  # Archive's report (PR notes, suggested commit) is captured, saved and shown at
-  # a gate; if it stopped without archiving, the run aborts instead of completing.
-  - id: archive
-    command: speckit.living.archive
+  # Sync's report (PR notes, suggested commit) is captured, saved and shown at
+  # a gate; if it stopped without syncing, the run aborts instead of completing.
+  - id: sync
+    command: speckit.living.sync
     integration: "{{ inputs.integration }}"
     capture: true
     input:
-      args: "This is an automated run: do not ask questions. After the completion report, end your response with a final line that is exactly `ARCHIVE: DONE` if the artifacts were archived, or `ARCHIVE: STOPPED` if you stopped without archiving."
+      args: "This is an automated run: do not ask questions. After the completion report, end your response with a final line that is exactly `SYNC: DONE` if the living specs were synced, or `SYNC: STOPPED` if you stopped without syncing."
 
-  - id: save-archive-report
+  - id: save-sync-report
     type: shell
     strict: true
     env:
-      REPORT: "{{ steps.archive.output.stdout }}"
+      REPORT: "{{ steps.sync.output.stdout }}"
       RUN_ID: "{{ context.run_id }}"
-    run: 'printf "%s\n" "$REPORT" > ".specify/workflows/runs/$RUN_ID/archive-report.md"'
+    run: 'printf "%s\n" "$REPORT" > ".specify/workflows/runs/$RUN_ID/sync-report.md"'
 
-  - id: check-archive
+  - id: check-sync
     type: if
-    condition: "{{ 'ARCHIVE: DONE' not in steps.archive.output.stdout }}"
+    condition: "{{ 'SYNC: DONE' not in steps.sync.output.stdout }}"
     then:
-      - id: archive-stopped
+      - id: sync-stopped
         type: gate
-        message: "Archive stopped without archiving (its report is below). The run stops here: fix what it reports, then run speckit.living.archive yourself."
-        show_file: ".specify/workflows/runs/{{ context.run_id }}/archive-report.md"
+        message: "Sync stopped without changing the living specs (its report is below). The run stops here: fix what it reports, then run speckit.living.sync yourself."
+        show_file: ".specify/workflows/runs/{{ context.run_id }}/sync-report.md"
         options: [abort]
         on_reject: abort
     else:
-      - id: archive-done
+      - id: sync-done
         type: gate
-        message: "Archived. Review the changes to this spec and the living specs it updated, then commit them; the report below has PR notes and a suggested commit message."
-        show_file: ".specify/workflows/runs/{{ context.run_id }}/archive-report.md"
+        message: "Synced. Review the changes under specs/living/ (and specs/retired/) and the feature's spec header, then commit them; the report below has PR notes and a suggested commit message."
+        show_file: ".specify/workflows/runs/{{ context.run_id }}/sync-report.md"
         options: [approve]
         on_reject: skip

@@ -1,15 +1,17 @@
 # Feature Specification: Add Task
 
+> **History.** This directory records how this feature was specified and built. For current
+> behavior read the living specs under **Living specs** below; read this only for why things changed.
+
 **Feature Branch**: `001-add-task`
 
 **Created**: 2026-09-02
 
-**Status**: Living
+**Status**: Synced
 
-**Last Updated**: 2026-09-09
+**Synced**: 2026-09-09
 
-**Archived artifacts**: plan.md, tasks.md, checklists/ (recover with
-`git log --diff-filter=D --name-only -- specs/001-add-task`)
+**Living specs**: created specs/living/add-task
 
 **Input**: User description: "Let me add tasks to a to-do list from the command line"
 
@@ -39,8 +41,8 @@ there the next time they use the tool.
 
 - What happens when the title is empty or only whitespace? The task is rejected with
   "Title must not be empty." and the list is unchanged.
-- What happens when the title is longer than 200 characters? The task is rejected with
-  "Title must be at most 200 characters." and the list is unchanged.
+- What happens when the title is longer than 100 characters? The task is rejected with
+  "Title must be at most 100 characters." and the list is unchanged.
 - What happens when no task file exists yet? It is created on the first add.
 
 ## Requirements *(mandatory)*
@@ -52,8 +54,8 @@ there the next time they use the tool.
   it.
 - **FR-003**: System MUST reject a title that is empty after trimming, with the message
   "Title must not be empty.", and leave the stored tasks unchanged.
-- **FR-004**: System MUST reject a title longer than 200 characters, with the message
-  "Title must be at most 200 characters.", and leave the stored tasks unchanged.
+- **FR-004**: System MUST reject a title longer than 100 characters, with the message
+  "Title must be at most 100 characters.", and leave the stored tasks unchanged.
 - **FR-005**: System MUST give each new task the next sequential ID, starting at 1. IDs MUST
   never be reused.
 - **FR-006**: System MUST keep added tasks across runs.
@@ -62,7 +64,7 @@ there the next time they use the tool.
 ### Key Entities
 
 - **Task**: something the user needs to do. Has an ID (sequential, never reused) and a title
-  (1–200 characters, trimmed).
+  (1–100 characters, trimmed).
 
 ## Success Criteria *(mandatory)*
 
